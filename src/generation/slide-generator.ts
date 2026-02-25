@@ -10,6 +10,7 @@ import {
 } from './prompts.js';
 import { getImageAsBase64, getImageMediaType } from '../extraction/image-extractor.js';
 import { htmlTableToMarkdown } from '../extraction/table-extractor.js';
+import { getMarkdownStorageDir, generateMarkdownFilename } from '../utils/config.js';
 
 export interface SlideGenerationOptions {
   theme?: string;
@@ -21,6 +22,7 @@ export interface SlideGenerationOptions {
 export interface GeneratedSlides {
   markdown: string;
   filePath: string;
+  storedFilePath: string;
   slideCount: number;
   images: string[];
 }
@@ -92,10 +94,16 @@ export class SlideGenerator {
     // Clean up markdown
     markdown = this.cleanMarkdown(markdown);
 
-    // Save to file
+    // Save to output directory
     await fs.ensureDir(outputDir);
     const filePath = path.join(outputDir, 'slides.md');
     await fs.writeFile(filePath, markdown, 'utf-8');
+
+    // Save to storage directory
+    const storageDir = getMarkdownStorageDir();
+    const storedFileName = generateMarkdownFilename('slides');
+    const storedFilePath = path.join(storageDir, storedFileName);
+    await fs.writeFile(storedFilePath, markdown, 'utf-8');
 
     // Count slides
     const actualSlideCount = (markdown.match(/^---$/gm) || []).length + 1;
@@ -103,6 +111,7 @@ export class SlideGenerator {
     return {
       markdown,
       filePath,
+      storedFilePath,
       slideCount: actualSlideCount,
       images: summary.images.map((img) => img.path),
     };
@@ -173,11 +182,18 @@ export class SlideGenerator {
     const filePath = path.join(outputDir, 'slides.md');
     await fs.writeFile(filePath, markdown, 'utf-8');
 
+    // Save to storage directory
+    const storageDir = getMarkdownStorageDir();
+    const storedFileName = generateMarkdownFilename('slides');
+    const storedFilePath = path.join(storageDir, storedFileName);
+    await fs.writeFile(storedFilePath, markdown, 'utf-8');
+
     const actualSlideCount = (markdown.match(/^---$/gm) || []).length + 1;
 
     return {
       markdown,
       filePath,
+      storedFilePath,
       slideCount: actualSlideCount,
       images: summary.images.map((img) => img.path),
     };

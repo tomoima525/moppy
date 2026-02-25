@@ -35,5 +35,12 @@ export { startPreviewServer, stopPreviewServer, type PreviewServer } from './mar
 export { startWatcher, stopWatcher, type FileWatcher } from './marp/watcher.js';
 
 // Utilities
-export { loadConfig, ensureOutputDir, type MoppyConfig } from './utils/config.js';
+export {
+  loadConfig,
+  ensureOutputDir,
+  getMarkdownStorageDir,
+  listStoredMarkdown,
+  getStoredMarkdownPath,
+  type MoppyConfig,
+} from './utils/config.js';
 export { logger, setLogLevel, type LogLevel } from './utils/logger.js';

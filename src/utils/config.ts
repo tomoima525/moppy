@@ -39,3 +39,32 @@ export function getAssetsDir(outputDir: string): string {
   fs.ensureDirSync(assetsDir);
   return assetsDir;
 }
+
+export function getMarkdownStorageDir(): string {
+  const storageDir = path.resolve('.moppy/markdown');
+  fs.ensureDirSync(storageDir);
+  return storageDir;
+}
+
+export function generateMarkdownFilename(prefix: string = 'slides'): string {
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+  return `${prefix}-${timestamp}.md`;
+}
+
+export async function listStoredMarkdown(): Promise<string[]> {
+  const storageDir = getMarkdownStorageDir();
+  const files = await fs.readdir(storageDir);
+  return files
+    .filter((f) => f.endsWith('.md'))
+    .sort()
+    .reverse();
+}
+
+export async function getStoredMarkdownPath(filename: string): Promise<string | null> {
+  const storageDir = getMarkdownStorageDir();
+  const filePath = path.join(storageDir, filename);
+  if (await fs.pathExists(filePath)) {
+    return filePath;
+  }
+  return null;
+}

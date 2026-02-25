@@ -5,6 +5,7 @@ import { runInteractiveMode } from '../src/cli/app.js';
 import { generateCommand } from '../src/cli/commands/generate.js';
 import { previewCommand } from '../src/cli/commands/preview.js';
 import { exportCommand } from '../src/cli/commands/export.js';
+import { listCommand } from '../src/cli/commands/list.js';
 import { loadConfig } from '../src/utils/config.js';
 import { logger } from '../src/utils/logger.js';
 import chalk from 'chalk';
@@ -71,13 +72,23 @@ program
 // Export command
 program
   .command('export <file>')
-  .description('Export Marp markdown to various formats')
+  .description('Export Marp markdown to various formats (supports stored markdown filenames)')
   .option('-f, --format <type>', 'Output format (html, pdf, pptx, png, jpeg)', 'pdf')
   .option('-o, --output <path>', 'Output file path')
   .option('-t, --theme <name>', 'Override theme')
   .action(async (file, options) => {
     console.log(chalk.magenta.bold('\nMoppy') + chalk.dim(` v${VERSION}`) + ' - Export Mode\n');
     await exportCommand(file, options);
+  });
+
+// List command
+program
+  .command('list')
+  .alias('ls')
+  .description('List stored markdown files')
+  .action(async () => {
+    console.log(chalk.magenta.bold('\nMoppy') + chalk.dim(` v${VERSION}`) + ' - Stored Files\n');
+    await listCommand();
   });
 
 program.parse();

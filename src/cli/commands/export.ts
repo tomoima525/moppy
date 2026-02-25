@@ -2,6 +2,7 @@ import path from 'path';
 import fs from 'fs-extra';
 import { compileMarp, OutputFormat, validateMarpMarkdown } from '../../marp/compiler.js';
 import { logger } from '../../utils/logger.js';
+import { getStoredMarkdownPath, listStoredMarkdown } from '../../utils/config.js';
 
 export interface ExportOptions {
   format?: OutputFormat;
@@ -15,11 +16,31 @@ export async function exportCommand(
   file: string,
   options: ExportOptions
 ): Promise<void> {
-  const filePath = path.resolve(file);
+  let filePath = path.resolve(file);
+
+  // Check if it's a stored markdown file (just filename without path)
+  if (!file.includes('/') && !file.includes('\\')) {
+    const storedPath = await getStoredMarkdownPath(file);
+    if (storedPath) {
+      filePath = storedPath;
+      logger.info(`Using stored markdown: ${file}`);
+    }
+  }
 
   // Validate file exists
   if (!(await fs.pathExists(filePath))) {
-    logger.error(`File not found: ${filePath}`);
+    // Try to find in stored markdown
+    const storedFiles = await listStoredMarkdown();
+    if (storedFiles.length > 0) {
+      logger.error(`File not found: ${filePath}`);
+      logger.info('\nAvailable stored markdown files:');
+      storedFiles.slice(0, 5).forEach((f) => console.log(`  - ${f}`));
+      if (storedFiles.length > 5) {
+        logger.info(`  ... and ${storedFiles.length - 5} more (use "moppy list" to see all)`);
+      }
+    } else {
+      logger.error(`File not found: ${filePath}`);
+    }
     process.exit(1);
   }
 
