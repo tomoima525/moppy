@@ -16,7 +16,7 @@ const program = new Command();
 
 program
   .name('moppy')
-  .description('AI-powered slide generator using Claude and Marp')
+  .description('AI-powered slide generator using multiple LLM providers and Marp')
   .version(VERSION);
 
 // Default command - interactive mode
@@ -29,15 +29,17 @@ program
     try {
       const config = loadConfig();
       await runInteractiveMode({
-        apiKey: config.anthropicApiKey,
-        model: config.claudeModel,
+        provider: config.provider,
+        model: config.model,
         outputDir: options.output,
         theme: options.theme,
       });
     } catch (error) {
-      if (error instanceof Error && error.message.includes('ANTHROPIC_API_KEY')) {
-        logger.error('ANTHROPIC_API_KEY not set. Please set it in your environment or .env file.');
-        logger.info('Create a .env file with: ANTHROPIC_API_KEY=sk-ant-xxx');
+      if (error instanceof Error && error.message.includes('API_KEY')) {
+        logger.error('API key not set. Please set it in your environment or .env file.');
+        logger.info('For Anthropic: ANTHROPIC_API_KEY=sk-ant-xxx');
+        logger.info('For OpenAI: OPENAI_API_KEY=sk-xxx');
+        logger.info('Provider can be set with: LLM_PROVIDER=anthropic|openai|google|groq|mistral');
       } else {
         const msg = error instanceof Error ? error.message : String(error);
         logger.error(msg);

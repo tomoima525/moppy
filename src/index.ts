@@ -3,9 +3,18 @@ export { MoppyAgent, type AgentConfig, type AgentCallbacks } from './core/agent.
 export { Session, type SessionState } from './core/session.js';
 export { Conversation, type Message } from './core/conversation.js';
 
-// Claude client
-export { ClaudeClient, type ClaudeClientOptions, type ImageContent } from './claude/client.js';
-export { collectStream, streamToConsole, type StreamCallbacks } from './claude/streaming.js';
+// LLM client (multi-provider support)
+export {
+  LLMClient,
+  type LLMClientOptions,
+  type LLMProvider,
+  type ImageContent,
+  type SimpleMessage,
+  // Backward compatibility aliases
+  ClaudeClient,
+  type ClaudeClientOptions,
+} from './llm/client.js';
+export { collectStream, streamToConsole, type StreamCallbacks } from './llm/streaming.js';
 
 // Source processing
 export {

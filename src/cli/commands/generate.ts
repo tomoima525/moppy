@@ -21,8 +21,8 @@ export async function generateCommand(
   const outputDir = ensureOutputDir(options.output || config.outputDir);
 
   const agent = new MoppyAgent({
-    apiKey: config.anthropicApiKey,
-    model: config.claudeModel,
+    provider: config.provider,
+    model: config.model,
     outputDir,
     theme: options.theme || config.defaultTheme,
   });

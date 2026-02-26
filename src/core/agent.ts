@@ -1,4 +1,4 @@
-import { ClaudeClient } from '../claude/client.js';
+import { LLMClient, type LLMProvider } from '../llm/client.js';
 import { Session } from './session.js';
 import { loadSource, SourceContent, closeBrowser } from '../sources/index.js';
 import { SlideGenerator, GeneratedSlides } from '../generation/slide-generator.js';
@@ -10,10 +10,12 @@ import { isValidTheme } from '../generation/themes.js';
 import path from 'path';
 
 export interface AgentConfig {
-  apiKey: string;
+  provider?: LLMProvider;
   model?: string;
   outputDir?: string;
   theme?: string;
+  // Backward compatibility
+  apiKey?: string;
 }
 
 export interface AgentCallbacks {
@@ -24,17 +26,17 @@ export interface AgentCallbacks {
 }
 
 export class MoppyAgent {
-  private claude: ClaudeClient;
+  private llm: LLMClient;
   private generator: SlideGenerator;
   private session: Session;
   private previewServer: PreviewServer | null = null;
 
   constructor(config: AgentConfig) {
-    this.claude = new ClaudeClient({
-      apiKey: config.apiKey,
+    this.llm = new LLMClient({
+      provider: config.provider,
       model: config.model,
     });
-    this.generator = new SlideGenerator(this.claude);
+    this.generator = new SlideGenerator(this.llm);
     this.session = new Session(
       config.outputDir || './slides',
       config.theme || 'default'
@@ -149,7 +151,7 @@ export class MoppyAgent {
       return this.handleCommand(command, callbacks);
     }
 
-    // Regular chat - ask Claude for help
+    // Regular chat - ask LLM for help
     const context = this.buildChatContext();
     const messages = this.session.getConversation().getContext();
 
@@ -157,13 +159,13 @@ export class MoppyAgent {
       let response = '';
 
       if (callbacks?.onToken) {
-        const stream = this.claude.streamMessage(SYSTEM_PROMPT, messages, 4096);
+        const stream = this.llm.streamMessage(SYSTEM_PROMPT, messages, 4096);
         for await (const token of stream) {
           response += token;
           callbacks.onToken(token);
         }
       } else {
-        response = await this.claude.sendMessage(SYSTEM_PROMPT, messages, 4096);
+        response = await this.llm.sendMessage(SYSTEM_PROMPT, messages, 4096);
       }
 
       this.session.getConversation().addAssistantMessage(response);

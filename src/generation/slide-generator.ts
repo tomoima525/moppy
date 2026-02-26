@@ -1,6 +1,6 @@
 import path from 'path';
 import fs from 'fs-extra';
-import { ClaudeClient, ImageContent } from '../claude/client.js';
+import { LLMClient, type ImageContent } from '../llm/client.js';
 import { SourceContent } from '../sources/index.js';
 import {
   SYSTEM_PROMPT,
@@ -34,10 +34,10 @@ export interface ContentSummary {
 }
 
 export class SlideGenerator {
-  private claude: ClaudeClient;
+  private llm: LLMClient;
 
-  constructor(claude: ClaudeClient) {
-    this.claude = claude;
+  constructor(llm: LLMClient) {
+    this.llm = llm;
   }
 
   async generateFromSources(
@@ -72,19 +72,18 @@ export class SlideGenerator {
     let markdown: string;
     if (summary.images.length > 0 && summary.images.length <= 5) {
       const imageContents: ImageContent[] = summary.images.slice(0, 5).map((img) => ({
-        type: 'base64',
-        mediaType: getImageMediaType(img.path),
         data: getImageAsBase64(img.path),
+        mimeType: getImageMediaType(img.path),
       }));
 
-      markdown = await this.claude.analyzeWithVision(
+      markdown = await this.llm.analyzeWithVision(
         SYSTEM_PROMPT,
         prompt,
         imageContents,
         8192
       );
     } else {
-      markdown = await this.claude.sendMessage(
+      markdown = await this.llm.sendMessage(
         SYSTEM_PROMPT,
         [{ role: 'user', content: prompt }],
         8192
@@ -132,7 +131,7 @@ export class SlideGenerator {
       images: imagesInfo || 'No images available',
     });
 
-    const result = await this.claude.sendMessage(
+    const result = await this.llm.sendMessage(
       SYSTEM_PROMPT,
       [{ role: 'user', content: prompt }],
       2048
@@ -166,7 +165,7 @@ export class SlideGenerator {
     });
 
     let markdown = '';
-    const stream = this.claude.streamMessage(
+    const stream = this.llm.streamMessage(
       SYSTEM_PROMPT,
       [{ role: 'user', content: prompt }],
       8192

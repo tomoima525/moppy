@@ -1,6 +1,8 @@
 # Moppy
 
-AI-powered slide generator using Claude and Marp.
+AI-powered slide generator using multiple LLM providers and Marp.
+
+Supports **Anthropic Claude**, **OpenAI GPT**, **Google Gemini**, **Groq**, and **Mistral** models.
 
 ## Installation
 
@@ -11,17 +13,71 @@ npm run build
 
 ## Setup
 
-Set your Anthropic API key:
+### API Keys
 
+Set your API key for the provider you want to use:
+
+**Anthropic (default):**
 ```bash
 export ANTHROPIC_API_KEY=sk-ant-xxx
+```
+
+**OpenAI:**
+```bash
+export OPENAI_API_KEY=sk-xxx
+```
+
+**Google Gemini:**
+```bash
+export GEMINI_API_KEY=xxx
+```
+
+**Groq:**
+```bash
+export GROQ_API_KEY=xxx
+```
+
+**Mistral:**
+```bash
+export MISTRAL_API_KEY=xxx
 ```
 
 Or create a `.env` file:
 
 ```
+# Required: API key for your chosen provider
 ANTHROPIC_API_KEY=sk-ant-xxx
+
+# Optional: Choose provider (default: anthropic)
+LLM_PROVIDER=anthropic
+
+# Optional: Override model
+LLM_MODEL=claude-sonnet-4-20250514
 ```
+
+## Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `LLM_PROVIDER` | LLM provider to use | `anthropic` |
+| `LLM_MODEL` | Model ID override | Provider default |
+| `ANTHROPIC_API_KEY` | Anthropic API key | - |
+| `OPENAI_API_KEY` | OpenAI API key | - |
+| `GEMINI_API_KEY` | Google Gemini API key | - |
+| `GROQ_API_KEY` | Groq API key | - |
+| `MISTRAL_API_KEY` | Mistral API key | - |
+| `OUTPUT_DIR` | Default output directory | `./slides` |
+| `DEFAULT_THEME` | Default Marp theme | `default` |
+
+### Supported Providers and Default Models
+
+| Provider | Default Model |
+|----------|---------------|
+| `anthropic` | `claude-sonnet-4-20250514` |
+| `openai` | `gpt-4o` |
+| `google` | `gemini-2.0-flash` |
+| `groq` | `llama-3.3-70b-versatile` |
+| `mistral` | `mistral-large-latest` |
 
 ## Usage
 
@@ -55,9 +111,14 @@ moppy generate <sources...> [options]
 
 **Examples:**
 ```bash
+# Using default provider (Anthropic)
 moppy generate ./document.pdf
-moppy generate https://example.com/article -s 10
-moppy generate file1.pdf file2.pdf -o ./output -t gaia
+
+# Using OpenAI
+LLM_PROVIDER=openai moppy generate https://example.com/article -s 10
+
+# Using Google Gemini
+LLM_PROVIDER=google moppy generate file1.pdf file2.pdf -o ./output -t gaia
 ```
 
 ### Preview Command
@@ -135,7 +196,7 @@ Use `moppy list` to see all stored files and `moppy export <filename>` to genera
 ## Requirements
 
 - Node.js >= 18.0.0
-- Anthropic API key
+- API key for at least one supported provider
 
 ## License
 

@@ -1,4 +1,4 @@
-import type { MessageParam } from '@anthropic-ai/sdk/resources/messages';
+import type { SimpleMessage } from '../llm/client.js';
 
 export interface Message {
   role: 'user' | 'assistant';
@@ -43,29 +43,34 @@ export class Conversation {
     return this.messages[this.messages.length - 1];
   }
 
-  toClaudeMessages(): MessageParam[] {
+  toLLMMessages(): SimpleMessage[] {
     return this.messages.map((msg) => ({
       role: msg.role,
       content: msg.content,
     }));
   }
 
+  // Backward compatibility alias
+  toClaudeMessages(): SimpleMessage[] {
+    return this.toLLMMessages();
+  }
+
   clear(): void {
     this.messages = [];
   }
 
-  getContext(maxTokenEstimate: number = 10000): MessageParam[] {
+  getContext(maxTokenEstimate: number = 10000): SimpleMessage[] {
     // Simple token estimation (4 chars ≈ 1 token)
-    const messages = this.toClaudeMessages();
+    const messages = this.toLLMMessages();
     let totalChars = 0;
     const maxChars = maxTokenEstimate * 4;
 
-    const selectedMessages: MessageParam[] = [];
+    const selectedMessages: SimpleMessage[] = [];
 
     // Take messages from the end, respecting token limit
     for (let i = messages.length - 1; i >= 0; i--) {
       const msg = messages[i];
-      const msgChars = typeof msg.content === 'string' ? msg.content.length : 0;
+      const msgChars = msg.content.length;
 
       if (totalChars + msgChars > maxChars) {
         break;

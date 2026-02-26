@@ -1,30 +1,65 @@
 import dotenv from 'dotenv';
 import path from 'path';
 import fs from 'fs-extra';
+import type { LLMProvider } from '../llm/client.js';
 
 dotenv.config();
 
 export interface MoppyConfig {
-  anthropicApiKey: string;
-  claudeModel: string;
+  provider: LLMProvider;
+  model: string;
   outputDir: string;
   defaultTheme: string;
+  // Backward compatibility
+  anthropicApiKey?: string;
 }
 
-export function loadConfig(): MoppyConfig {
-  const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
+const PROVIDER_API_KEY_ENV: Record<LLMProvider, string> = {
+  anthropic: 'ANTHROPIC_API_KEY',
+  openai: 'OPENAI_API_KEY',
+  google: 'GEMINI_API_KEY',
+  groq: 'GROQ_API_KEY',
+  mistral: 'MISTRAL_API_KEY',
+};
 
-  if (!anthropicApiKey) {
+const DEFAULT_MODELS: Record<LLMProvider, string> = {
+  anthropic: 'claude-sonnet-4-20250514',
+  openai: 'gpt-4o',
+  google: 'gemini-2.0-flash',
+  groq: 'llama-3.3-70b-versatile',
+  mistral: 'mistral-large-latest',
+};
+
+export function loadConfig(): MoppyConfig {
+  const provider = (process.env.LLM_PROVIDER as LLMProvider) || 'anthropic';
+
+  // Validate provider
+  if (!PROVIDER_API_KEY_ENV[provider]) {
     throw new Error(
-      'ANTHROPIC_API_KEY is required. Set it in your environment or .env file.'
+      `Invalid LLM_PROVIDER: ${provider}. Supported: ${Object.keys(PROVIDER_API_KEY_ENV).join(', ')}`
     );
   }
 
+  // Check for API key (pi-ai auto-detects from env, but we validate it exists)
+  const apiKeyEnv = PROVIDER_API_KEY_ENV[provider];
+  const apiKey = process.env[apiKeyEnv];
+
+  if (!apiKey) {
+    throw new Error(
+      `${apiKeyEnv} is required for provider '${provider}'. Set it in your environment or .env file.`
+    );
+  }
+
+  // Model can be overridden, or use provider default
+  const model = process.env.LLM_MODEL || process.env.CLAUDE_MODEL || DEFAULT_MODELS[provider];
+
   return {
-    anthropicApiKey,
-    claudeModel: process.env.CLAUDE_MODEL || 'claude-sonnet-4-5-20250929',
+    provider,
+    model,
     outputDir: process.env.OUTPUT_DIR || './slides',
     defaultTheme: process.env.DEFAULT_THEME || 'default',
+    // Backward compatibility
+    anthropicApiKey: process.env.ANTHROPIC_API_KEY,
   };
 }
 
