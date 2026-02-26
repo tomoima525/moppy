@@ -1,13 +1,20 @@
-import { LLMClient, type LLMProvider } from '../llm/client.js';
-import { Session } from './session.js';
-import { loadSource, SourceContent, closeBrowser } from '../sources/index.js';
-import { SlideGenerator, GeneratedSlides } from '../generation/slide-generator.js';
-import { compileMarp, OutputFormat } from '../marp/compiler.js';
-import { startPreviewServer, stopPreviewServer, PreviewServer } from '../marp/server.js';
-import { SYSTEM_PROMPT } from '../generation/prompts.js';
-import { logger } from '../utils/logger.js';
-import { isValidTheme } from '../generation/themes.js';
-import path from 'path';
+import { LLMClient, type LLMProvider } from "../llm/client.js";
+import { Session } from "./session.js";
+import { loadSource, SourceContent, closeBrowser } from "../sources/index.js";
+import {
+  SlideGenerator,
+  GeneratedSlides,
+} from "../generation/slide-generator.js";
+import { compileMarp, OutputFormat } from "../marp/compiler.js";
+import {
+  startPreviewServer,
+  stopPreviewServer,
+  PreviewServer,
+} from "../marp/server.js";
+import { SYSTEM_PROMPT } from "../generation/prompts.js";
+import { logger } from "../utils/logger.js";
+import { isValidTheme } from "../generation/themes.js";
+import path from "path";
 
 export interface AgentConfig {
   provider?: LLMProvider;
@@ -38,8 +45,8 @@ export class MoppyAgent {
     });
     this.generator = new SlideGenerator(this.llm);
     this.session = new Session(
-      config.outputDir || './slides',
-      config.theme || 'default'
+      config.outputDir || "./slides",
+      config.theme || "default",
     );
   }
 
@@ -49,7 +56,7 @@ export class MoppyAgent {
 
   async loadSources(
     sources: string[],
-    callbacks?: AgentCallbacks
+    callbacks?: AgentCallbacks,
   ): Promise<SourceContent[]> {
     const loaded: SourceContent[] = [];
 
@@ -58,14 +65,14 @@ export class MoppyAgent {
 
       try {
         const content = await loadSource(source, {
-          outputDir: path.join(this.session.getOutputDir(), 'assets'),
+          outputDir: path.join(this.session.getOutputDir(), "assets"),
           renderPages: true,
           captureScreenshots: true,
         });
         this.session.addSource(content);
         loaded.push(content);
 
-        const type = content.type === 'pdf' ? 'PDF' : 'web page';
+        const type = content.type === "pdf" ? "PDF" : "web page";
         callbacks?.onProgress?.(`Loaded ${type}: ${source}`);
       } catch (error) {
         const err = error instanceof Error ? error : new Error(String(error));
@@ -79,16 +86,18 @@ export class MoppyAgent {
 
   async generateSlides(
     slideCount?: number,
-    callbacks?: AgentCallbacks
+    callbacks?: AgentCallbacks,
   ): Promise<GeneratedSlides | null> {
     const sources = this.session.getSources();
 
     if (sources.length === 0) {
-      callbacks?.onError?.(new Error('No sources loaded. Load a PDF or URL first.'));
+      callbacks?.onError?.(
+        new Error("No sources loaded. Load a PDF or URL first."),
+      );
       return null;
     }
 
-    callbacks?.onProgress?.('Generating slides...');
+    callbacks?.onProgress?.("Generating slides...");
 
     try {
       let result: GeneratedSlides;
@@ -113,7 +122,7 @@ export class MoppyAgent {
         }
 
         if (!finalResult) {
-          throw new Error('Failed to get generated slides result');
+          throw new Error("Failed to get generated slides result");
         }
         result = finalResult;
       } else {
@@ -126,9 +135,11 @@ export class MoppyAgent {
       }
 
       this.session.setCurrentSlideFile(result.filePath);
-      this.session.getConversation().addAssistantMessage(
-        `Created ${result.slideCount} slides. File: ${result.filePath}`
-      );
+      this.session
+        .getConversation()
+        .addAssistantMessage(
+          `Created ${result.slideCount} slides. File: ${result.filePath}`,
+        );
 
       callbacks?.onComplete?.(result);
       return result;
@@ -139,10 +150,7 @@ export class MoppyAgent {
     }
   }
 
-  async chat(
-    message: string,
-    callbacks?: AgentCallbacks
-  ): Promise<string> {
+  async chat(message: string, callbacks?: AgentCallbacks): Promise<string> {
     this.session.getConversation().addUserMessage(message);
 
     // Check for special commands
@@ -152,11 +160,10 @@ export class MoppyAgent {
     }
 
     // Regular chat - ask LLM for help
-    const context = this.buildChatContext();
     const messages = this.session.getConversation().getContext();
 
     try {
-      let response = '';
+      let response = "";
 
       if (callbacks?.onToken) {
         const stream = this.llm.streamMessage(SYSTEM_PROMPT, messages, 4096);
@@ -177,36 +184,42 @@ export class MoppyAgent {
     }
   }
 
-  private parseCommand(message: string): { type: string; args: string[] } | null {
+  private parseCommand(
+    message: string,
+  ): { type: string; args: string[] } | null {
     const lower = message.toLowerCase().trim();
 
     // Load command
     const loadMatch = lower.match(/^load\s+(.+)$/i);
     if (loadMatch) {
-      return { type: 'load', args: loadMatch[1].split(/\s+/) };
+      return { type: "load", args: loadMatch[1].split(/\s+/) };
     }
 
     // Theme command
     const themeMatch = lower.match(/^(?:set\s+)?theme\s+(?:to\s+)?(\w+)$/i);
     if (themeMatch) {
-      return { type: 'theme', args: [themeMatch[1]] };
+      return { type: "theme", args: [themeMatch[1]] };
     }
 
     // Export command
-    const exportMatch = lower.match(/^export(?:\s+to)?\s+(html|pdf|png|jpeg|pptx)$/i);
+    const exportMatch = lower.match(
+      /^export(?:\s+to)?\s+(html|pdf|png|jpeg|pptx)$/i,
+    );
     if (exportMatch) {
-      return { type: 'export', args: [exportMatch[1].toLowerCase()] };
+      return { type: "export", args: [exportMatch[1].toLowerCase()] };
     }
 
     // Preview command
-    if (lower === 'preview' || lower === 'start preview') {
-      return { type: 'preview', args: [] };
+    if (lower === "preview" || lower === "start preview") {
+      return { type: "preview", args: [] };
     }
 
     // Generate command
-    const generateMatch = lower.match(/^(?:generate|create)\s+(\d+)\s+slides?$/i);
+    const generateMatch = lower.match(
+      /^(?:generate|create)\s+(\d+)\s+slides?$/i,
+    );
     if (generateMatch) {
-      return { type: 'generate', args: [generateMatch[1]] };
+      return { type: "generate", args: [generateMatch[1]] };
     }
 
     return null;
@@ -214,14 +227,14 @@ export class MoppyAgent {
 
   private async handleCommand(
     command: { type: string; args: string[] },
-    callbacks?: AgentCallbacks
+    callbacks?: AgentCallbacks,
   ): Promise<string> {
     switch (command.type) {
-      case 'load':
+      case "load":
         await this.loadSources(command.args, callbacks);
         return `Loaded ${command.args.length} source(s).`;
 
-      case 'theme':
+      case "theme":
         const theme = command.args[0];
         if (isValidTheme(theme)) {
           this.session.setTheme(theme);
@@ -229,28 +242,28 @@ export class MoppyAgent {
         }
         return `Unknown theme: ${theme}. Available: default, gaia, uncover`;
 
-      case 'export':
+      case "export":
         const format = command.args[0] as OutputFormat;
         const result = await this.export(format, callbacks);
         return result
           ? `Exported to: ${result}`
-          : 'Export failed. No slides to export.';
+          : "Export failed. No slides to export.";
 
-      case 'preview':
+      case "preview":
         const server = await this.startPreview(callbacks);
         return server
           ? `Preview started at: ${server.url}`
-          : 'Failed to start preview. No slides file found.';
+          : "Failed to start preview. No slides file found.";
 
-      case 'generate':
+      case "generate":
         const count = parseInt(command.args[0], 10);
         const slides = await this.generateSlides(count, callbacks);
         return slides
           ? `Generated ${slides.slideCount} slides: ${slides.filePath}`
-          : 'Failed to generate slides.';
+          : "Failed to generate slides.";
 
       default:
-        return 'Unknown command.';
+        return "Unknown command.";
     }
   }
 
@@ -259,7 +272,9 @@ export class MoppyAgent {
     const parts: string[] = [];
 
     if (state.sources.length > 0) {
-      parts.push(`Loaded sources: ${state.sources.map((s) => s.path).join(', ')}`);
+      parts.push(
+        `Loaded sources: ${state.sources.map((s) => s.path).join(", ")}`,
+      );
     }
 
     if (state.currentSlideFile) {
@@ -269,17 +284,19 @@ export class MoppyAgent {
     parts.push(`Theme: ${state.theme}`);
     parts.push(`Output directory: ${state.outputDir}`);
 
-    return parts.join('\n');
+    return parts.join("\n");
   }
 
   async export(
     format: OutputFormat,
-    callbacks?: AgentCallbacks
+    callbacks?: AgentCallbacks,
   ): Promise<string | null> {
     const slideFile = this.session.getCurrentSlideFile();
 
     if (!slideFile) {
-      callbacks?.onError?.(new Error('No slides to export. Generate slides first.'));
+      callbacks?.onError?.(
+        new Error("No slides to export. Generate slides first."),
+      );
       return null;
     }
 
@@ -296,19 +313,25 @@ export class MoppyAgent {
       return result.outputPath;
     }
 
-    callbacks?.onError?.(new Error(result.errors?.join('\n') || 'Export failed'));
+    callbacks?.onError?.(
+      new Error(result.errors?.join("\n") || "Export failed"),
+    );
     return null;
   }
 
-  async startPreview(callbacks?: AgentCallbacks): Promise<PreviewServer | null> {
+  async startPreview(
+    callbacks?: AgentCallbacks,
+  ): Promise<PreviewServer | null> {
     const slideFile = this.session.getCurrentSlideFile();
 
     if (!slideFile) {
-      callbacks?.onError?.(new Error('No slides to preview. Generate slides first.'));
+      callbacks?.onError?.(
+        new Error("No slides to preview. Generate slides first."),
+      );
       return null;
     }
 
-    callbacks?.onProgress?.('Starting preview server...');
+    callbacks?.onProgress?.("Starting preview server...");
 
     try {
       this.previewServer = await startPreviewServer({
